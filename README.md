@@ -25,7 +25,7 @@ PookalBot is a hackathon robot that autonomously dry-cleans an area, draws a Poo
 ### Backend
 ```bash
 # Set AI key (optional — falls back to local generator without it)
-$env:AI_API_KEY = "your-key-here"
+$env:AI_API_KEY = AQ.Ab8RN6JkAmwnKMQLFxgFZTopGpeXp97Qro5-sk0F-9d5xtZDgA
 
 python -m uvicorn server.main:app --reload
 # API docs → http://localhost:8000/docs
