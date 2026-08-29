@@ -117,6 +117,7 @@ void loop() {
         gLastStatusMs = now;
         // TODO: populate gStatus.battery_mv from ADC read
         // TODO: populate gStatus.obstacle from proximity sensor
-        sendStatus(gStatus);
+        sendStatus(gStatus); 
     }
 }
+b

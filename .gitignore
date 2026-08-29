@@ -12,8 +12,9 @@ build/
 venv/
 env/
 
-# Pytest
-.pytest_cache/
+# Temp test scripts
+_test_*.py
+_run_server.py
 .coverage
 htmlcov/
 
