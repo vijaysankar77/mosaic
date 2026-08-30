@@ -1,169 +1,149 @@
 """
-ai/generator.py — AI provider abstraction for Pookalam design generation.
+ai/generator.py — top-level Pookalam design generator.
 
-Priority
+Pipeline
 --------
-1. If AI_API_KEY is set → try external AI (Cohere generate endpoint).
-2. On any failure, or if key is absent → fall back to local SVG generator.
+1. Try Gemini (parallel) via ai.gemini_client. N candidate images.
+2. Validate each image (basic checks: decodable, not all-white, non-trivial).
+   Candidates that fail validation are dropped here — per the web app spec,
+   a bad design should never even be shown as a selectable option.
+3. Wrap each surviving image in a DesignCandidate with a title + description.
+4. If no API key is configured, raise a clear error so the route layer
+   can return a 503 to the frontend.
 
-The frontend never receives the API key.
-Provider-specific code is isolated in _cohere_generate().
+Titles / descriptions are deterministic per slot so the user can compare
+apples-to-apples across different prompt runs.
 """
 from __future__ import annotations
-import json
+
+import base64
+import io
 import logging
-import os
 import uuid
-from typing import List
+from typing import List, Tuple
 
-import httpx
-
+from .gemini_client import (
+    generate_pookalam_images,
+    provider_available,
+    current_provider_name,
+    GeminiImage,
+)
 from .models import DesignCandidate, DesignRequest
-from .svg_generator import generate_local_svgs
-from .svg_validator import validate_svg, estimate_waypoints, estimate_drawing_time
 
 log = logging.getLogger(__name__)
 
-# ── Titles / descriptions for the three design slots ─────────────────────────
+
+# Three named slots so the candidates feel like a curated set, not 3 random rolls
 _SLOT_META = [
     ("Petal Ring",  "Lotus-petal ring radiating from a central disc — a classic Onam motif."),
-    ("Mandala",     "Layered mandala rings with diamond accents drawn in polar symmetry."),
+    ("Mandala",     "Layered mandala rings with diamond accents drawn in rotational symmetry."),
     ("Star Burst",  "Geometric star with overlapping petal arcs — bold and precise."),
 ]
 
 
-# ── Local fallback (always works, no network) ─────────────────────────────────
+# ── Image validation ──────────────────────────────────────────────────────────
+#
+# Per the web app spec: "If a generated design fails validation, don't show
+# it as a selectable candidate at all." This is a *light* check — the heavy
+# CV validation (vectorize endpoint) happens later, in the dedicated route.
+# Here we just make sure the image is structurally usable.
 
-def _local_fallback(request: DesignRequest) -> List[DesignCandidate]:
-    """Generate 3 candidates using the deterministic local SVG generator."""
-    svgs = generate_local_svgs(
-        n=request.symmetry,
-        complexity=request.complexity,
-        style=request.style,
-        theme=request.theme,
+def _validate_image(img: GeminiImage) -> Tuple[bool, List[str]]:
+    """
+    Quick sanity check on a freshly-generated image. Returns (ok, errors).
+    Heavy CV happens later in the vectorize endpoint.
+    """
+    errors: List[str] = []
+    if not img.image_bytes or len(img.image_bytes) < 200:
+        errors.append("Image is empty or suspiciously small.")
+        return False, errors
+    if img.mime_type not in ("image/png", "image/jpeg", "image/jpg", "image/webp"):
+        errors.append(f"Unsupported mime type: {img.mime_type!r}.")
+        return False, errors
+
+    # Try to decode via PIL if it's available — gives us cheap structural
+    # checks (real dimensions, not all-white, not corrupted). Falls back to
+    # a no-op pass if PIL is missing, since this is a soft check.
+    try:
+        from PIL import Image
+    except ImportError:
+        return True, []
+
+    try:
+        with Image.open(io.BytesIO(img.image_bytes)) as pil:
+            pil.verify()  # detects corruption
+        with Image.open(io.BytesIO(img.image_bytes)) as pil:
+            w, h = pil.size
+            if w < 128 or h < 128:
+                errors.append(f"Image too small: {w}x{h}.")
+                return False, errors
+            # Convert to grayscale and check that it isn't a blank canvas
+            gray = pil.convert("L")
+            extrema = gray.getextrema()
+            if extrema[1] - extrema[0] < 32:
+                errors.append(
+                    "Image looks blank or near-uniform (no contrast). "
+                    "Gemini may have failed to render the design."
+                )
+                return False, errors
+    except Exception as exc:
+        errors.append(f"Image failed to decode: {exc}")
+        return False, errors
+
+    return True, []
+
+
+# ── Public API ────────────────────────────────────────────────────────────────
+
+def ai_available() -> bool:
+    """True if the currently-configured image provider is usable right now."""
+    return provider_available()
+
+
+async def generate_designs_async(
+    request: DesignRequest, n: int = 3,
+) -> List[DesignCandidate]:
+    """
+    Async entry point — fires the n Gemini calls in parallel and returns
+    DesignCandidate objects (with base64-encoded images). Candidates that
+    fail validation are silently dropped.
+    """
+    images = await generate_pookalam_images(
+        petal_count=request.petal_count,
+        layer_count=request.layer_count,
+        color_count=request.color_count,
+        free_text=request.free_text,
+        n=n,
     )
-    candidates = []
-    for svg, (title, desc) in zip(svgs, _SLOT_META):
-        errors = validate_svg(svg)
-        wps    = estimate_waypoints(svg, request.symmetry)
-        dt     = estimate_drawing_time(wps)
+
+    candidates: List[DesignCandidate] = []
+    for i, img in enumerate(images):
+        ok, errors = _validate_image(img)
+        if not ok:
+            log.warning("Dropping candidate %d: %s", i, "; ".join(errors))
+            continue
+        title, desc = _SLOT_META[i] if i < len(_SLOT_META) else (
+            f"Design {i + 1}", "Pookalam design candidate."
+        )
         candidates.append(DesignCandidate(
             id=str(uuid.uuid4()),
             title=title,
             description=desc,
-            theme=request.theme,
-            symmetry=request.symmetry,
-            complexity=request.complexity,
-            style=request.style,
-            svg=svg,
-            drawable=len(errors) == 0,
-            validation_errors=errors,
-            estimated_waypoints=wps,
-            estimated_drawing_time_sec=dt,
-            source="local_fallback",
+            petal_count=request.petal_count,
+            layer_count=request.layer_count,
+            color_count=request.color_count,
+            free_text=request.free_text,
+            image_b64=base64.b64encode(img.image_bytes).decode("ascii"),
+            image_mime=img.mime_type,
+            drawable=True,
+            source="gemini",
         ))
+
+    if not candidates and images:
+        log.warning(
+            "All %d Gemini images failed validation for petal=%d layer=%d color=%d",
+            len(images), request.petal_count, request.layer_count, request.color_count,
+        )
+    elif not candidates:
+        log.warning("Gemini returned no images.")
     return candidates
-
-
-# ── Cohere AI provider ────────────────────────────────────────────────────────
-
-def _cohere_generate(request: DesignRequest, api_key: str) -> List[DesignCandidate]:
-    """
-    Ask Cohere to describe three Pookalam SVG designs, then build the actual
-    SVGs locally using those descriptions to influence motif selection.
-
-    We use Cohere's /v2/chat endpoint to get creative titles + descriptions,
-    then feed those back into the local SVG generator with enhanced theme strings.
-    This keeps SVG generation deterministic while the AI influences the narrative.
-    """
-    prompt = (
-        f"You are a Pookalam (Kerala floral art) design assistant. "
-        f"The user wants 3 distinct Pookalam designs with:\n"
-        f"Theme: {request.theme}\n"
-        f"Symmetry: {request.symmetry}-fold\n"
-        f"Complexity: {request.complexity}\n"
-        f"Style: {request.style}\n\n"
-        f"Return ONLY a JSON array of exactly 3 objects, each with keys: "
-        f'"title" (≤6 words) and "description" (1 sentence). '
-        f"No markdown, no extra text."
-    )
-
-    resp = httpx.post(
-        "https://api.cohere.com/v2/chat",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "model": "command-r-plus",
-            "messages": [{"role": "user", "content": prompt}],
-        },
-        timeout=15.0,
-    )
-    resp.raise_for_status()
-
-    raw_text: str = resp.json()["message"]["content"][0]["text"].strip()
-    # Strip markdown fences if present
-    if raw_text.startswith("```"):
-        raw_text = "\n".join(raw_text.split("\n")[1:-1])
-
-    ai_meta = json.loads(raw_text)  # list of {title, description}
-
-    # Generate the actual SVGs using the local generator but with AI-informed themes
-    enriched_themes = [
-        f"{request.theme} {item.get('title', '')} {item.get('description', '')}"
-        for item in ai_meta
-    ]
-    svgs = [
-        generate_local_svgs(request.symmetry, request.complexity, request.style, t)[i]
-        for i, t in enumerate(enriched_themes)
-    ]
-
-    candidates = []
-    for svg, item in zip(svgs, ai_meta):
-        errors = validate_svg(svg)
-        wps    = estimate_waypoints(svg, request.symmetry)
-        dt     = estimate_drawing_time(wps)
-        candidates.append(DesignCandidate(
-            id=str(uuid.uuid4()),
-            title=item.get("title", "AI Design"),
-            description=item.get("description", ""),
-            theme=request.theme,
-            symmetry=request.symmetry,
-            complexity=request.complexity,
-            style=request.style,
-            svg=svg,
-            drawable=len(errors) == 0,
-            validation_errors=errors,
-            estimated_waypoints=wps,
-            estimated_drawing_time_sec=dt,
-            source="ai",
-        ))
-    return candidates
-
-
-# ── Public entry point ────────────────────────────────────────────────────────
-
-def generate_designs(request: DesignRequest) -> List[DesignCandidate]:
-    """
-    Generate 3 Pookalam design candidates.
-
-    Uses Cohere AI if AI_API_KEY is set; otherwise uses the local fallback.
-    Falls back to local on any network or parsing error.
-    """
-    api_key = os.environ.get("AI_API_KEY", "").strip()
-
-    if api_key:
-        try:
-            log.info("Using Cohere AI generator")
-            return _cohere_generate(request, api_key)
-        except Exception as exc:
-            log.warning("AI generation failed (%s) — using local fallback", exc)
-
-    log.info("Using local_fallback generator")
-    return _local_fallback(request)
-
-
-def ai_available() -> bool:
-    """Return True if an API key is configured."""
-    return bool(os.environ.get("AI_API_KEY", "").strip())
