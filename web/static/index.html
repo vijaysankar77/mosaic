@@ -106,6 +106,7 @@
             </div>
           </div>
 
+<<<<<<< HEAD
           <div class="control">
             <label class="control-label" for="layerCount">Rings / layers</label>
             <p class="control-hint">Concentric bands from the centre outward.</p>
@@ -115,6 +116,296 @@
                 <option value="2" selected>2 — layered bands</option>
                 <option value="3">3 — full mandala</option>
               </select>
+=======
+          <div class="form-row">
+            <label class="form-label" for="themeInput">Theme</label>
+            <div class="input-wrap">
+              <span class="input-icon" aria-hidden="true">🌸</span>
+              <input id="themeInput" class="form-input" type="text"
+                placeholder="e.g. Traditional Kerala + Lotus + Onam" autocomplete="off" />
+            </div>
+            <span class="form-error" id="themeError" role="alert" aria-live="polite"></span>
+          </div>
+
+          <div class="selects-row">
+            <div class="form-group">
+              <label class="form-label" for="symmetrySelect">
+                <span aria-hidden="true">✦</span> Symmetry
+              </label>
+              <div class="select-wrap">
+                <select id="symmetrySelect" class="form-select">
+                  <option value="4">4-fold</option>
+                  <option value="6">6-fold</option>
+                  <option value="8" selected>8-fold</option>
+                  <option value="10">10-fold</option>
+                  <option value="12">12-fold</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="complexitySelect">
+                <span aria-hidden="true">◈</span> Complexity
+              </label>
+              <div class="select-wrap">
+                <select id="complexitySelect" class="form-select">
+                  <option value="simple" selected>Simple</option>
+                  <option value="medium">Medium</option>
+                  <option value="detailed">Detailed</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="styleSelect">
+                <span aria-hidden="true">◎</span> Design Style
+              </label>
+              <div class="select-wrap">
+                <select id="styleSelect" class="form-select">
+                  <option value="traditional" selected>Traditional</option>
+                  <option value="floral">Floral</option>
+                  <option value="geometric">Geometric</option>
+                  <option value="modern">Modern</option>
+                  <option value="festival">Festival</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-badges">
+            <div class="badge">
+              <span class="badge-icon" aria-hidden="true">🌿</span>
+              <div><div class="badge-title">AI Powered</div><div class="badge-sub">Creative designs in seconds</div></div>
+            </div>
+            <div class="badge">
+              <span class="badge-icon" aria-hidden="true">🎯</span>
+              <div><div class="badge-title">Perfect Symmetry</div><div class="badge-sub">Mathematically balanced patterns</div></div>
+            </div>
+            <div class="badge">
+              <span class="badge-icon" aria-hidden="true">🌸</span>
+              <div><div class="badge-title">Onam Inspired</div><div class="badge-sub">Traditional motifs and colors</div></div>
+            </div>
+          </div>
+
+          <div class="generate-row">
+            <button id="generateBtn" class="btn btn-generate">
+              <span class="btn-icon" aria-hidden="true">✨</span>
+              <span class="btn-text">Generate Designs</span>
+              <span class="btn-spinner" aria-hidden="true"></span>
+            </button>
+            <svg class="arrow-deco" viewBox="0 0 60 28" fill="none" aria-hidden="true">
+              <path d="M2 22 C12 8, 36 4, 55 14" stroke="#c8860a" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+              <polyline points="50,10 55,14 50,18" stroke="#c8860a" stroke-width="1.5" fill="none"/>
+            </svg>
+          </div>
+          <p id="generateMsg" class="generate-msg" aria-live="polite"></p>
+        </section>
+
+        <!-- Generated designs -->
+        <section class="card designs-card hidden" id="designsSection" aria-labelledby="designsTitle">
+          <h2 id="designsTitle" class="card-title"><span class="title-icon" aria-hidden="true">◈</span> Choose Your Design</h2>
+          <div class="designs-grid" id="designsGrid" role="list"></div>
+        </section>
+
+        <!-- Selected design info -->
+        <section class="card preview-info-card hidden" id="previewInfoSection" aria-labelledby="piTitle">
+          <h2 id="piTitle" class="card-title"><span class="title-icon" aria-hidden="true">◉</span> Selected Design</h2>
+          <dl class="info-list">
+            <dt>Theme</dt>      <dd id="previewTheme">—</dd>
+            <dt>Design</dt>     <dd id="previewName">—</dd>
+            <dt>Symmetry</dt>   <dd id="previewSymmetry">—</dd>
+            <dt>Complexity</dt> <dd id="previewComplexity">—</dd>
+            <dt>Status</dt>     <dd class="status-ready">Ready for path generation</dd>
+          </dl>
+          <!-- TODO: POST /api/generate-path with selected SVG -->
+          <!-- TODO: Display generated theta/r/pen waypoints  -->
+          <button id="continueBtn" class="btn btn-accent btn-lg mt-1">Continue to Path Preview →</button>
+          <p id="continueTodo" class="todo-msg hidden" role="status" aria-live="polite">
+            Path generation module will be connected next.
+          </p>
+        </section>
+
+        <!-- Robot Status -->
+        <section class="card status-card" aria-labelledby="robotStatusTitle">
+          <h2 id="robotStatusTitle" class="card-title">
+            <span class="pulse-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2.5" width="18" height="18"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </span>
+            Robot Status
+          </h2>
+          <!-- TODO: Connect /api/status polling   -->
+          <!-- TODO: Connect live camera           -->
+          <!-- TODO: Connect robot controls        -->
+          <div class="status-grid">
+            <div class="status-tile">
+              <span class="status-tile-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20" stroke-width="3" stroke-linecap="round"/></svg>
+              </span>
+              <div class="status-tile-label">Connection</div>
+              <div class="status-tile-value offline">Offline</div>
+              <div class="status-tile-sub">Not connected</div>
+            </div>
+            <div class="status-tile">
+              <span class="status-tile-icon purple" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              </span>
+              <div class="status-tile-label">Phase</div>
+              <div class="status-tile-value purple">Standby</div>
+              <div class="status-tile-sub">Waiting for command</div>
+            </div>
+            <div class="status-tile">
+              <span class="status-tile-icon blue" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="11" y1="6" x2="13" y2="6"/><path d="M7 14h10"/></svg>
+              </span>
+              <div class="status-tile-label">Battery</div>
+              <div class="status-tile-value blue">-- %</div>
+              <div class="status-tile-sub">Battery level unknown</div>
+            </div>
+            <div class="status-tile">
+              <span class="status-tile-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              </span>
+              <div class="status-tile-label">Camera</div>
+              <div class="status-tile-value offline">Offline</div>
+              <div class="status-tile-sub">Not active</div>
+            </div>
+            <div class="status-tile">
+              <span class="status-tile-icon teal" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10z"/><path d="M12 8v4l3 3"/></svg>
+              </span>
+              <div class="status-tile-label">Cleaning System</div>
+              <div class="status-tile-value offline">Offline</div>
+              <div class="status-tile-sub">Not active</div>
+            </div>
+          </div>
+          <div class="status-footer">
+            <span class="status-footer-icon" aria-hidden="true">💡</span>
+            <span>Connect your robot and start creating beautiful Pookalams with AI</span>
+            <button class="btn-link">View Documentation →</button>
+          </div>
+        </section>
+
+
+        <!-- ── LIVE CAMERA SECTION ──────────────────────────────── -->
+        <section class="card camera-card hidden" id="cameraSection" aria-labelledby="cameraTitle">
+          <div class="camera-card-header">
+            <div>
+              <h2 id="cameraTitle" class="card-title">
+                <span class="title-icon" aria-hidden="true">📷</span> Live Camera
+              </h2>
+              <p class="card-desc">Webcam feed for area monitoring and Pookalam capture.</p>
+            </div>
+            <div class="camera-status-row">
+              <span class="cam-status-dot" id="camStatusDot"></span>
+              <span class="cam-status-text" id="camStatusText">Camera off</span>
+            </div>
+          </div>
+
+          <div class="camera-viewport" id="cameraViewport">
+            <video id="cameraVideo" autoplay playsinline muted></video>
+            <canvas id="cameraCanvas" class="hidden"></canvas>
+            <div class="cam-overlay" id="camOverlay" aria-hidden="true">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(200,134,10,.5)" stroke-width="0.5" stroke-dasharray="3 2"/>
+                <circle cx="50" cy="50" r="22" fill="none" stroke="rgba(200,134,10,.3)" stroke-width="0.4" stroke-dasharray="2 2"/>
+                <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(255,255,255,.25)" stroke-width="0.3"/>
+                <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(255,255,255,.25)" stroke-width="0.3"/>
+              </svg>
+            </div>
+            <div class="cam-placeholder" id="camPlaceholder">
+              <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" width="56" height="56">
+                <rect x="4" y="14" width="44" height="34" rx="6" fill="none" stroke="#c8860a" stroke-width="2"/>
+                <path d="M48 26l12-8v28l-12-8V26z" fill="none" stroke="#c8860a" stroke-width="2"/>
+                <circle cx="26" cy="31" r="8" fill="none" stroke="#2e7d32" stroke-width="2"/>
+                <circle cx="26" cy="31" r="3" fill="#2e7d32"/>
+              </svg>
+              <p>Click <strong>Start Camera</strong> to begin</p>
+            </div>
+          </div>
+
+          <div class="camera-controls">
+            <button id="camStartBtn" class="btn btn-cam-start">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              Start Camera
+            </button>
+            <button id="camStopBtn" class="btn btn-cam-stop hidden">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+              Stop
+            </button>
+            <button id="camCaptureBtn" class="btn btn-cam-capture hidden">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="4"/><path d="M20 7h-2.5l-1.5-2h-8L6.5 7H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>
+              Capture
+            </button>
+            <button id="camFlipBtn" class="btn btn-cam-flip hidden">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M4 12l4-4v3h8V8l4 4-4 4v-3H8v3z"/></svg>
+              Flip
+            </button>
+            <select id="camDeviceSelect" class="form-select cam-device-select hidden" aria-label="Select camera"></select>
+          </div>
+
+          <div class="capture-preview hidden" id="capturePreview">
+            <div class="capture-preview-header">
+              <span class="card-title" style="font-size:.9rem">📸 Captured Frame</span>
+              <button id="captureCloseBtn" class="btn-icon-sm" aria-label="Close capture">✕</button>
+            </div>
+            <img id="captureImg" alt="Captured frame" />
+            <p class="capture-hint">Use this with the CV pipeline:<br>
+              <code>python -m cv.cli captured.jpg --debug</code>
+            </p>
+          </div>
+
+          <p id="camError" class="cam-error hidden" role="alert" aria-live="polite"></p>
+        </section>
+        <!-- Workflow strip -->
+        <div class="workflow-card">
+          <div class="workflow-robot" aria-hidden="true">
+            <svg viewBox="0 0 130 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- pookalam on floor -->
+              <ellipse cx="65" cy="90" rx="50" ry="8" fill="#e8f5e9" stroke="#c8e6c9" stroke-width="1"/>
+              <circle cx="65" cy="90" r="28" fill="none" stroke="#a5d6a7" stroke-width="1" stroke-dasharray="3 2"/>
+              <circle cx="65" cy="90" r="15" fill="none" stroke="#c8e6c9" stroke-width="1"/>
+              <!-- robot body -->
+              <rect x="40" y="38" width="50" height="38" rx="6" fill="#f5f0e8" stroke="#d4b896" stroke-width="1.5"/>
+              <!-- robot head -->
+              <rect x="47" y="22" width="36" height="20" rx="5" fill="#f5f0e8" stroke="#c8a060" stroke-width="1.5"/>
+              <!-- eyes -->
+              <circle cx="57" cy="32" r="4.5" fill="#fff" stroke="#d4b896" stroke-width="1"/>
+              <circle cx="73" cy="32" r="4.5" fill="#fff" stroke="#d4b896" stroke-width="1"/>
+              <circle cx="57" cy="32" r="2" fill="#2e7d32"/>
+              <circle cx="73" cy="32" r="2" fill="#2e7d32"/>
+              <!-- wheels -->
+              <ellipse cx="48" cy="78" rx="10" ry="6" fill="#d4b896" stroke="#b89060" stroke-width="1"/>
+              <ellipse cx="82" cy="78" rx="10" ry="6" fill="#d4b896" stroke="#b89060" stroke-width="1"/>
+              <!-- turret -->
+              <rect x="60" y="15" width="10" height="8" rx="3" fill="#c8860a"/>
+              <circle cx="65" cy="13" r="4" fill="#e8a820" opacity=".8"/>
+            </svg>
+          </div>
+          <div class="workflow-cta">
+            <p class="workflow-cta-text">Connect your robot and start creating <strong>beautiful Pookalams</strong> with AI!</p>
+          </div>
+          <div class="workflow-steps">
+            <div class="workflow-step">
+              <div class="step-icon-wrap" aria-hidden="true">🌸</div>
+              <div class="step-title">1. Design</div>
+              <div class="step-sub">AI creates your Pookalam</div>
+            </div>
+            <span class="step-arrow" aria-hidden="true">›</span>
+            <div class="workflow-step">
+              <div class="step-icon-wrap" aria-hidden="true">👁</div>
+              <div class="step-title">2. Preview</div>
+              <div class="step-sub">See and select the best design</div>
+            </div>
+            <span class="step-arrow" aria-hidden="true">›</span>
+            <div class="workflow-step">
+              <div class="step-icon-wrap" aria-hidden="true">〰️</div>
+              <div class="step-title">3. Generate Path</div>
+              <div class="step-sub">Convert to robot drawing path</div>
+            </div>
+            <span class="step-arrow" aria-hidden="true">›</span>
+            <div class="workflow-step">
+              <div class="step-icon-wrap" aria-hidden="true">🤖</div>
+              <div class="step-title">4. Draw &amp; Clean</div>
+              <div class="step-sub">Robot draws and cleans the area</div>
+>>>>>>> 688fbef8d852319436917ffdfbb0e7238771e880
             </div>
           </div>
         </div>
